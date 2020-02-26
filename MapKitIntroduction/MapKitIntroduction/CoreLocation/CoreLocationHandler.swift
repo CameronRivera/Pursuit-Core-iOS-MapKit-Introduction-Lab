@@ -10,10 +10,9 @@ import Foundation
 import CoreLocation
 
 protocol CoreLocationHandlerDelegate: AnyObject{
-    func locationUseAuthorized(_ coreLocationHandler: CoreLocationHandler, _ status: CLAuthorizationStatus)
+    func locationChanged(_ coreLocationHandler: CoreLocationHandler, _ locations: [CLLocation])
 }
 
-// Do I even require this class for this assignment?
 class CoreLocationHandler: NSObject {
     
     public var locationHandler: CLLocationManager
@@ -38,10 +37,12 @@ class CoreLocationHandler: NSObject {
     }
     
     private func startMonitoringRegion(){
-        let location = CLLocationCoordinate2D(latitude: 43.82921, longitude: -73.12346)
-        let radius: Double = 500
+        let location = CLLocationCoordinate2D(latitude: 40.782865, longitude: -73.967544)
         let identifier = "Circular Region"
-        let region = CLCircularRegion(center: location, radius: radius, identifier: identifier)
+        let region = CLCircularRegion(center: location, radius: 500, identifier: identifier)
+        region.notifyOnEntry = true
+        region.notifyOnExit = false
+        
         locationHandler.startMonitoring(for: region)
     }
     
@@ -77,7 +78,7 @@ class CoreLocationHandler: NSObject {
 
 extension CoreLocationHandler: CLLocationManagerDelegate{
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        
+        delegate?.locationChanged(self, locations)
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -85,9 +86,9 @@ extension CoreLocationHandler: CLLocationManagerDelegate{
     }
     
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        switch status{
+        switch status {
         case .authorizedAlways, .authorizedWhenInUse:
-            delegate?.locationUseAuthorized(self, status)
+            locationHandler.requestLocation()
         default:
             break
         }

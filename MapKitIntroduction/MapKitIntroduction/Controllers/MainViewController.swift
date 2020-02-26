@@ -38,8 +38,9 @@ class MainViewController: UIViewController {
     
     private func setUp(){
         mainView.mapKitView.delegate = self
-        mainView.mapKitView.showsUserLocation = true
         coreLocationHandler.delegate = self
+        mainView.mapKitView.showsUserLocation = true
+        
         NYCHighSchoolAPIClient.getHighSchoolData { [weak self] result in
             switch result{
             case .failure(let netError):
@@ -66,12 +67,16 @@ class MainViewController: UIViewController {
     
     private func showAnnotations(){
         mainView.mapKitView.addAnnotations(annotations)
+        DispatchQueue.main.async{
+            self.mainView.mapKitView.showAnnotations(self.annotations, animated: false)
+        }
     }
 }
 
 extension MainViewController: MKMapViewDelegate{
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        guard annotation is MKPointAnnotation else { return nil }
         let identifier = "Generic identifier"
         var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
         
@@ -94,13 +99,12 @@ extension MainViewController: MKMapViewDelegate{
 }
 
 extension MainViewController: CoreLocationHandlerDelegate{
-    func locationUseAuthorized(_ coreLocationHandler: CoreLocationHandler, _ status: CLAuthorizationStatus) {
-        switch status{
-        case .authorizedAlways, .authorizedWhenInUse:
-            let region = MKCoordinateRegion(center: mainView.mapKitView.userLocation.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-                mainView.mapKitView.setRegion(region, animated: true)
-        default:
-            break
+    
+    func locationChanged(_ coreLocationHandler: CoreLocationHandler, _ locations: [CLLocation]) {
+        if let newLoc = locations.last {
+            let region = MKCoordinateRegion(center: newLoc.coordinate, latitudinalMeters: 5000, longitudinalMeters: 5000)
+            mainView.mapKitView.setRegion(region, animated: true)
         }
     }
+    
 }
